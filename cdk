@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -q -t cdk -f - > /dev/null
+FROM amazon/aws-cli as aws
+FROM node:slim
+
+COPY --from=aws /usr/local/aws-cli/ /usr/local/aws-cli/
+RUN ln -fs /usr/local/aws-cli/v2/current/bin/aws /usr/local/bin/aws
+
+RUN npm install -g npm aws-cdk
+
+ENTRYPOINT [ "cdk" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v ~/.aws:/aws \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -it \
+  -e AWS_CONFIG_FILE=/aws/config \
+  -e AWS_SHARED_CREDENTIALS_FILE=/aws/credentials \
+  -e AWS_DEFAULT_REGION \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_PROFILE \
+  -e AWS_ROLE_ARN \
+  -e AWS_WEB_IDENTITY_TOKEN_FILE \
+  -e AWS_ROLE_SESSION_NAME \
+  -e AWS_SESSION_TOKEN cdk "$@"
