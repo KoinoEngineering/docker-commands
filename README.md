@@ -9,6 +9,7 @@
 1. PATHを通す(以下はbashを使っている場合)
     ```
     $ echo "export PATH=$PATH:`pwd` >> ~/.bashrc
+    $ source ~/.bashrc
     ```
 1. 実行権限を付ける
     ```
