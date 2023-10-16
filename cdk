@@ -2,7 +2,7 @@
 
 tempdir=$(mktemp -d) || exit 1
 
-cat <<DOCKERFILE | docker build $tempdir -q -t cdk -f - > /dev/null
+cat <<DOCKERFILE | docker build $tempdir -t cdk -f -
 FROM amazon/aws-cli as aws
 FROM node:slim
 
