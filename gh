@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+if [ ! -d ~/.github-cli ]; then
+  mkdir -p ~/.github-cli/.ssh
+fi
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t github-cli -f - &> /dev/null
+FROM ubuntu
+
+RUN apt update && apt install -y curl
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 
+RUN chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg 
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null 
+RUN apt update && apt install gh -y
+
+RUN useradd -m -u $(id -u) -U -d /gh -p '' gh
+
+ENTRYPOINT [ "gh" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -it \
+  -v  ~/.github-cli:/gh \
+  -v ~/.ssh:/gh/.ssh \
+  github-cli \
+  "$@"
