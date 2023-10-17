@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# 現状の問題点: uid=1000のときにしか動かない
+# google/cloud-sdk内に cloudsdkユーザがいるため。
+# 1001 とかのユーザの場合adduserするように Dockerfileを作る予定
+# とりあえずマルチユーザの人間が回りにいないのでこのまま
+
+if [ ! -d ~/.googlecloud-cli ]; then
+  mkdir -p ~/.googlecloud-cli/.ssh
+fi
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -it \
+  -v ~/.ssh:/home/cloudsdk/.ssh \
+  -v ~/.googlecloud-cli:/home/cloudsdk \
+  google/cloud-sdk gcloud \
+  "$@"
