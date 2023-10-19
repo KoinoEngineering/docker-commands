@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t jmespath -f - &> /dev/null
+FROM ubuntu
+
+RUN apt-get update && apt-get install -y wget
+RUN wget https://github.com/jmespath/jp/releases/latest/download/jp-linux-amd64 \
+  -O /usr/local/bin/jp  && chmod +x /usr/local/bin/jp
+
+ENTRYPOINT [ "jp" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -i \
+  jmespath:latest \
+  "$@"
