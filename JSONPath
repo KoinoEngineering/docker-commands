@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t jsonpath -f - &> /dev/null
+FROM python:slim
+
+RUN apt-get update && apt-get install -y git gawk
+RUN pip install git+https://github.com/mclarkson/JSONPath.sh#egg=JSONPath.sh
+
+ENTRYPOINT [ "JSONPath.sh" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -i \
+  jsonpath:latest \
+  "$@"
