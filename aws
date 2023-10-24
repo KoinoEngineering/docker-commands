@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
 
+if [ ! -d ~/.aws-cli ]; then
+  mkdir -p ~/.aws-cli/.ssh
+fi
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t aws-cli -f - #&> /dev/null
+FROM amazon/aws-cli
+
+RUN yum install -y shadow-utils
+RUN useradd -m -u $(id -u) -U -d /cli -p '' cli
+# RUN adduser --disabled-password --uid $(id -u) --home /cli cli
+
+ENTRYPOINT [ "aws" ]
+DOCKERFILE
+
 docker run \
   -u $(id -u):$(id -g) \
   -v ~/.aws:/aws \
   -v $(pwd):$(pwd) \
   --workdir $(pwd) --rm -it \
+  -v ~/.aws-cli:/cli \
+  -v ~/.ssh:/cli/.ssh \
   -e AWS_CONFIG_FILE=/aws/config \
   -e AWS_SHARED_CREDENTIALS_FILE=/aws/credentials \
   -e AWS_DEFAULT_REGION \
@@ -16,5 +34,5 @@ docker run \
   -e AWS_ROLE_SESSION_NAME \
   -e AWS_SESSION_TOKEN \
   -e KUBECONFIG=$(pwd)/aws/.kube/config \
-  amazon/aws-cli:latest \
+  aws-cli:latest \
   "$@"
