@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+if [ ! -d ~/.docker-hub-cli ]; then
+  mkdir -p ~/.docker-hub-cli/.ssh
+fi
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t docker-hub-cli -f - &> /dev/null
+# 1.17超過のバージョンでは外部ライブラリは参照しなくなっている
+FROM golang:1.17
+
+ENV GO111MODULE=on
+RUN go get github.com/docker/hub-tool
+
+# RUN useradd -m -u $(id -u) -U -d /cli -p '' cli
+RUN adduser --disabled-password --uid $(id -u) --home /cli cli
+
+ENTRYPOINT [ "hub-tool" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -it \
+  -v  ~/.docker-hub-cli:/cli \
+  -v ~/.ssh:/cli/.ssh \
+  docker-hub-cli \
+  "$@"
