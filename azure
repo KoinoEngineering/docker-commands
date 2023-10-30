@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+if [ ! -d ~/.azure-cli ]; then
+  mkdir -p ~/.azure-cli/.ssh
+fi
+
+tempdir=$(mktemp -d) || exit 1
+
+cat <<DOCKERFILE | docker build $tempdir -t azure-cli -f - #&> /dev/null
+FROM mcr.microsoft.com/azure-cli
+
+# RUN useradd -m -u $(id -u) -U -d /cli -p '' cli
+RUN adduser --disabled-password --uid $(id -u) --home /cli cli
+
+ENTRYPOINT [ "az" ]
+DOCKERFILE
+
+docker run \
+  -u $(id -u):$(id -g) \
+  -v $(pwd):$(pwd) \
+  --workdir $(pwd) --rm -it \
+  -v  ~/.azure-cli:/cli \
+  -v ~/.ssh:/cli/.ssh \
+  azure-cli \
+  "$@"
